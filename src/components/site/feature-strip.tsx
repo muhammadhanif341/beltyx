@@ -1,10 +1,15 @@
-import { RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { Gem, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 
 const FEATURES = [
   {
     icon: Truck,
-    title: "Free Shipping",
+    title: "Free & Fast Shipping",
     description: "On all orders over $75",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Secure Payments",
+    description: "Cash on delivery or bank transfer",
   },
   {
     icon: RotateCcw,
@@ -12,15 +17,15 @@ const FEATURES = [
     description: "30-day return policy",
   },
   {
-    icon: ShieldCheck,
-    title: "Secure Payment",
-    description: "Cash on delivery or bank transfer",
+    icon: Gem,
+    title: "Premium Quality",
+    description: "Full-grain leather, hand-finished",
   },
 ];
 
 export function FeatureStrip() {
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-3xl bg-card p-6 ring-1 ring-border sm:grid-cols-3 sm:p-8">
+    <div className="grid grid-cols-1 gap-4 rounded-3xl bg-card p-6 ring-1 ring-border sm:grid-cols-2 sm:p-8 lg:grid-cols-4">
       {FEATURES.map((feature) => (
         <div key={feature.title} className="flex items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">

@@ -19,12 +19,12 @@ import { useWishlistStore } from "@/lib/store/wishlist-store";
 import { cn } from "cn";
 
 const NAV_LINKS = [
+  { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
   { href: "/category/wallets", label: "Wallets" },
   { href: "/category/belts", label: "Belts" },
-  { href: "/category/gift-sets", label: "Gift Sets" },
+  { href: "/category/accessories", label: "Accessories" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
 ];
 
 export function Header() {
@@ -100,6 +100,10 @@ export function Header() {
                   Track Order
                 </SheetClose>
               </nav>
+              <div className="flex items-center justify-between border-t border-border p-4">
+                <span className="text-sm font-medium text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
             </SheetContent>
             <Button
               variant="ghost"
@@ -139,13 +143,11 @@ export function Header() {
             <Search className="size-[18px]" />
           </Button>
 
-          <ThemeToggle />
-
           <Button
             variant="ghost"
             size="icon"
             aria-label="Wishlist"
-            className="relative"
+            className="relative hidden lg:inline-flex"
             render={<Link href="/wishlist" />}
           >
             <Heart className="size-[18px]" />
@@ -160,7 +162,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             aria-label="Account"
-            className="hidden sm:inline-flex"
+            className="hidden lg:inline-flex"
             render={<Link href="/account" />}
           >
             <User className="size-[18px]" />
@@ -180,6 +182,8 @@ export function Header() {
               </span>
             )}
           </Button>
+
+          <ThemeToggle className="hidden lg:inline-flex" />
         </div>
       </div>
 

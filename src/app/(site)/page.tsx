@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Hammer, ShieldCheck, Sparkles, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/site/product-card";
-import { CategoryRail } from "@/components/site/category-rail";
+import { CategoryShowcase } from "@/components/site/category-showcase";
 import { FeatureStrip } from "@/components/site/feature-strip";
 import { SectionHeading } from "@/components/site/section-heading";
 import { FadeIn, StaggerGrid, StaggerItem } from "@/components/site/fade-in";
@@ -48,21 +48,20 @@ export default async function HomePage() {
               <Sparkles className="size-3.5" />
               Full-grain leather, since day one
             </p>
-            <h1 className="mt-5 font-display text-4xl leading-[1.05] font-semibold sm:text-5xl lg:text-6xl">
-              Carry leather that
-              <span className="gold-text-gradient block">ages like it means it.</span>
+            <h1 className="mt-5 font-display text-4xl leading-[1.05] font-semibold uppercase sm:text-5xl lg:text-6xl">
+              Crafted for every day.
+              <span className="gold-text-gradient block">Built to last.</span>
             </h1>
             <p className="mt-5 max-w-md text-base text-muted-foreground sm:text-lg">
-              Wallets, belts, and everyday-carry essentials hand-finished from full-grain
-              leather — built to develop character with every year you use them.
+              Premium leather wallets and belts designed with timeless craftsmanship.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="xl" variant="hero" render={<Link href="/shop" />}>
-                Shop the Collection
+              <Button size="xl" variant="hero" render={<Link href="/category/wallets" />}>
+                Shop Wallets
                 <ArrowRight className="size-4" data-icon="inline-end" />
               </Button>
-              <Button size="xl" variant="heroOutline" render={<Link href="/about" />}>
-                Our Story
+              <Button size="xl" variant="heroOutline" render={<Link href="/category/belts" />}>
+                Shop Belts
               </Button>
             </div>
             <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
@@ -112,15 +111,17 @@ export default async function HomePage() {
         <FadeIn className="px-4 sm:px-0">
           <SectionHeading eyebrow="Collections" title="Shop by Category" className="mb-8" />
         </FadeIn>
-        <CategoryRail categories={categories} />
+        <div className="px-4 sm:px-0">
+          <CategoryShowcase categories={categories} />
+        </div>
       </section>
 
       {/* Featured products */}
       <section className="mx-auto mt-20 max-w-7xl px-4 sm:px-6 lg:px-8">
         <FadeIn>
           <SectionHeading
-            eyebrow="Bestsellers"
-            title="Customer Favorites"
+            eyebrow="Customer Favorites"
+            title="Bestsellers"
             description="The pieces our customers reach for again and again."
             href="/shop"
             className="mb-8"
@@ -139,37 +140,49 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Brand story strip */}
+      {/* Brand story */}
       <section className="mx-auto mt-24 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <FadeIn className="grid grid-cols-1 items-center gap-10 rounded-4xl bg-[#1a140f] px-6 py-14 text-[#f3ede1] sm:px-12 lg:grid-cols-2">
-          <div>
+        <FadeIn className="grid grid-cols-1 items-center gap-10 overflow-hidden rounded-4xl bg-[#1a140f] text-[#f3ede1] lg:grid-cols-2">
+          <div className="relative aspect-[4/3] w-full lg:aspect-auto lg:h-full lg:min-h-[520px]">
+            <Image
+              src="https://placehold.co/900x1100/2a1f16/e8c77a?text=Beltyx+Craft"
+              alt="A Beltyx craftsperson hand-stitching a leather wallet"
+              fill
+              sizes="(min-width: 1024px) 45vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+          <div className="px-6 py-10 sm:px-10 lg:px-4 lg:py-14 lg:pr-14">
             <p className="text-xs font-semibold tracking-[0.2em] text-[#e8c77a] uppercase">
               Our Craft
             </p>
-            <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">
-              Vegetable-tanned. Hand-cut. Built to be used, not shelved.
+            <h2 className="mt-3 font-display text-3xl font-semibold uppercase sm:text-4xl">
+              Made to age beautifully
             </h2>
             <p className="mt-4 max-w-lg text-[#f3ede1]/75">
               Every Beltyx piece starts as full-grain hide, cut and stitched by small
-              workshops we&apos;ve partnered with for years. No coatings, no shortcuts —
-              just leather that gets better with age.
+              workshops we&apos;ve partnered with for years — leather that gets better
+              with age, not worse.
             </p>
-            <Button variant="hero" size="lg" className="mt-6" render={<Link href="/about" />}>
+            <dl className="mt-8 grid grid-cols-2 gap-6">
+              {[
+                { icon: Sparkles, label: "Quality Leather", value: "Full-grain hides" },
+                { icon: Hammer, label: "Craftsmanship", value: "Hand-cut & stitched" },
+                { icon: ShieldCheck, label: "Durability", value: "Built to outlast trends" },
+                { icon: Timer, label: "Timeless Design", value: "Never goes out of style" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-start gap-3">
+                  <item.icon className="mt-0.5 size-5 shrink-0 text-[#e8c77a]" />
+                  <div>
+                    <dt className="text-sm font-semibold">{item.label}</dt>
+                    <dd className="text-xs text-[#f3ede1]/65">{item.value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+            <Button variant="hero" size="lg" className="mt-8" render={<Link href="/about" />}>
               Read Our Story
             </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Full-grain leather", value: "100%" },
-              { label: "Hand-finished edges", value: "Every piece" },
-              { label: "Craftsmanship guarantee", value: "2 Years" },
-              { label: "Countries shipped to", value: "20+" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-3xl bg-white/5 p-5">
-                <p className="font-display text-2xl font-semibold text-[#e8c77a]">{stat.value}</p>
-                <p className="mt-1 text-xs text-[#f3ede1]/70">{stat.label}</p>
-              </div>
-            ))}
           </div>
         </FadeIn>
       </section>

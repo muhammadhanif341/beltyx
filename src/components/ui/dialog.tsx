@@ -19,8 +19,19 @@ function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+function DialogClose({
+  render,
+  nativeButton,
+  ...props
+}: DialogPrimitive.Close.Props) {
+  return (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      render={render}
+      nativeButton={nativeButton ?? render === undefined}
+      {...props}
+    />
+  )
 }
 
 function DialogOverlay({
