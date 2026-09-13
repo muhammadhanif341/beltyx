@@ -66,7 +66,7 @@ export default async function ProductDetailPage({
     trackProductView(product.id),
   ]);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
