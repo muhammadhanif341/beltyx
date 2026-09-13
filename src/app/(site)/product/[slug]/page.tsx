@@ -19,6 +19,7 @@ import {
   getApprovedReviews,
   getProductBySlug,
   getRelatedProducts,
+  trackProductView,
 } from "@/lib/queries";
 
 export async function generateMetadata({
@@ -29,9 +30,24 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product" };
+  const description = product.description ?? `Shop the ${product.name} at Beltyx.`;
+  const image = product.images?.[0]?.url;
   return {
     title: product.name,
-    description: product.description ?? `Shop the ${product.name} at Beltyx.`,
+    description,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      type: "website",
+      title: product.name,
+      description,
+      images: image ? [{ url: image, alt: product.images?.[0]?.alt ?? product.name }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images: image ? [image] : undefined,
+    },
   };
 }
 
@@ -47,10 +63,41 @@ export default async function ProductDetailPage({
   const [related, reviews] = await Promise.all([
     getRelatedProducts(product.category_id, product.id),
     getApprovedReviews(product.id),
+    trackProductView(product.id),
   ]);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description ?? undefined,
+    image: product.images?.map((img) => img.url),
+    sku: product.sku ?? undefined,
+    brand: { "@type": "Brand", name: "BELTYX" },
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/product/${product.slug}`,
+      priceCurrency: "USD",
+      price: product.price,
+      availability:
+        product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+    ...(product.rating_count > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating_avg,
+        reviewCount: product.rating_count,
+      },
+    }),
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
+      />
       <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Link href="/shop" className="hover:text-accent">Shop</Link>
         <ChevronRight className="size-3" />

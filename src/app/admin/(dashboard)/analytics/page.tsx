@@ -4,6 +4,7 @@ import { StatCard } from "@/components/admin/stat-card";
 import { RevenueChart } from "@/components/admin/revenue-chart";
 import { DateRangeFilter, resolveDateRange } from "@/components/admin/date-range-filter";
 import { createClient } from "@/lib/supabase/server";
+import { getMostViewedProducts } from "@/lib/queries";
 import { formatPrice } from "@/lib/format";
 import type { Order, OrderItem, Profile } from "@/lib/types";
 
@@ -31,15 +32,23 @@ export default async function AdminAnalyticsPage({
   const params = await searchParams;
   const range = resolveDateRange(params.range, params.from, params.to);
   const supabase = await createClient();
-  const [{ data: orders }, { data: orderItems }, { data: customers }] = await Promise.all([
+  const [{ data: orders }, { data: orderItems }, { data: customers }, mostViewed] = await Promise.all([
     supabase.from("orders").select("*").gte("created_at", range.from).lte("created_at", range.to),
     supabase.from("order_items").select("*"),
     supabase.from("profiles").select("*").gte("created_at", range.from).lte("created_at", range.to),
+    getMostViewedProducts(5),
   ]);
 
   const allOrders = (orders ?? []) as Order[];
   const allItems = (orderItems ?? []) as OrderItem[];
   const allCustomers = (customers ?? []) as Profile[];
+
+  const [{ data: allViewRows }, { count: allTimeOrderCount }] = await Promise.all([
+    supabase.from("products").select("view_count"),
+    supabase.from("orders").select("id", { count: "exact", head: true }),
+  ]);
+  const totalViews = (allViewRows ?? []).reduce((sum, p) => sum + Number(p.view_count ?? 0), 0);
+  const conversionRate = totalViews > 0 ? ((allTimeOrderCount ?? 0) / totalViews) * 100 : 0;
 
   const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
   const avgOrderValue = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
@@ -79,11 +88,16 @@ export default async function AdminAnalyticsPage({
         <DateRangeFilter />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard icon={DollarSign} label="Revenue" value={formatPrice(totalRevenue)} />
         <StatCard icon={ShoppingCart} label="Orders" value={String(allOrders.length)} />
         <StatCard icon={TrendingUp} label="Avg. Order Value" value={formatPrice(avgOrderValue)} />
         <StatCard icon={Package} label="Items Sold" value={String(allItems.reduce((s, i) => s + i.quantity, 0))} />
+        <StatCard
+          icon={TrendingUp}
+          label="Conversion Rate (All-Time)"
+          value={totalViews > 0 ? `${conversionRate.toFixed(1)}%` : "—"}
+        />
       </div>
 
       <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
@@ -108,20 +122,40 @@ export default async function AdminAnalyticsPage({
         </div>
       </div>
 
-      <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
-        <h2 className="font-display text-lg font-semibold">Best-Selling Products</h2>
-        <div className="mt-4 flex flex-col gap-3">
-          {topProducts.length === 0 && <p className="text-sm text-muted-foreground">No sales data yet.</p>}
-          {topProducts.map((product, i) => (
-            <div key={product.name} className="flex items-center gap-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
-                {i + 1}
-              </span>
-              <span className="flex-1 text-sm font-medium">{product.name}</span>
-              <span className="text-xs text-muted-foreground">{product.qty} sold</span>
-              <span className="text-sm font-semibold">{formatPrice(product.revenue)}</span>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <h2 className="font-display text-lg font-semibold">Best-Selling Products</h2>
+          <p className="text-xs text-muted-foreground">In the selected date range</p>
+          <div className="mt-4 flex flex-col gap-3">
+            {topProducts.length === 0 && <p className="text-sm text-muted-foreground">No sales data yet.</p>}
+            {topProducts.map((product, i) => (
+              <div key={product.name} className="flex items-center gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                  {i + 1}
+                </span>
+                <span className="flex-1 text-sm font-medium">{product.name}</span>
+                <span className="text-xs text-muted-foreground">{product.qty} sold</span>
+                <span className="text-sm font-semibold">{formatPrice(product.revenue)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <h2 className="font-display text-lg font-semibold">Most Viewed Products</h2>
+          <p className="text-xs text-muted-foreground">All-time</p>
+          <div className="mt-4 flex flex-col gap-3">
+            {mostViewed.length === 0 && <p className="text-sm text-muted-foreground">No product views yet.</p>}
+            {mostViewed.map((product, i) => (
+              <div key={product.id} className="flex items-center gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                  {i + 1}
+                </span>
+                <span className="flex-1 truncate text-sm font-medium">{product.name}</span>
+                <span className="text-xs text-muted-foreground">{product.view_count} views</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

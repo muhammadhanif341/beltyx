@@ -55,6 +55,7 @@ export interface Product {
   rating_avg: number;
   rating_count: number;
   sales_count: number;
+  view_count: number;
   tags: string[];
   low_stock_threshold: number;
   specifications: Record<string, string>;

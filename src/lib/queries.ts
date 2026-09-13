@@ -249,6 +249,31 @@ export async function searchProductSuggestions(term: string, limit = 6): Promise
   }, []);
 }
 
+/** Fire-and-forget analytics counter — never blocks or fails the product page. */
+export async function trackProductView(productId: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("increment_product_view", { p_product_id: productId });
+  } catch (error) {
+    console.error("Product view tracking failed:", error);
+  }
+}
+
+export async function getMostViewedProducts(limit = 5): Promise<ProductWithRelations[]> {
+  return safeQuery(async () => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("products")
+      .select(PRODUCT_SELECT)
+      .gt("view_count", 0)
+      .order("view_count", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as unknown as ProductWithRelations[];
+  }, []);
+}
+
 export async function getApprovedReviews(productId: string): Promise<Review[]> {
   return safeQuery(async () => {
     const supabase = await createClient();

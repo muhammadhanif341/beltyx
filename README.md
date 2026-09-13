@@ -63,6 +63,7 @@ In the Supabase Dashboard, open the **SQL Editor** and run, in order:
 2. `supabase/migrations/0002_seed.sql` — sample categories/products for local development (optional but recommended)
 3. `supabase/migrations/0003_guest_checkout_verified_reviews.sql` — guest checkout policies, purchase-verified reviews, newsletter signups, and best-selling sort support
 4. `supabase/migrations/0004_checkout_orders_admin.sql` — full order status lifecycle + tracking timeline, atomic inventory decrement/overselling guard, coupon usage tracking + product/category restrictions, low-stock threshold, product specifications, and review photos
+5. `supabase/migrations/0005_analytics_seo_admin.sql` — product view-count tracking (powers the admin "Most Viewed Products" and conversion-rate analytics)
 
 (If you have the Supabase CLI linked to your project, `supabase db push` works too.)
 

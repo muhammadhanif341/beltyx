@@ -23,9 +23,17 @@ export async function generateMetadata({
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category" };
+  const description = category.description ?? `Shop ${category.name} at Beltyx.`;
   return {
     title: category.name,
-    description: category.description ?? `Shop ${category.name} at Beltyx.`,
+    description,
+    alternates: { canonical: `/category/${category.slug}` },
+    openGraph: {
+      type: "website",
+      title: category.name,
+      description,
+      images: category.image_url ? [{ url: category.image_url, alt: category.name }] : undefined,
+    },
   };
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -17,6 +18,7 @@ interface CustomerRow {
   id: string;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
   is_admin: boolean;
   created_at: string;
   orderCount: number;
@@ -36,6 +38,7 @@ export default async function AdminCustomersPage() {
       id: p.id,
       email: p.email,
       full_name: p.full_name,
+      phone: p.phone,
       is_admin: p.is_admin,
       created_at: p.created_at,
       orderCount: userOrders.length,
@@ -56,6 +59,7 @@ export default async function AdminCustomersPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead>Orders</TableHead>
               <TableHead className="text-right">Total Spent</TableHead>
@@ -65,7 +69,9 @@ export default async function AdminCustomersPage() {
             {customers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">
-                  {customer.full_name ?? "—"}
+                  <Link href={`/admin/customers/${customer.id}`} className="hover:text-accent">
+                    {customer.full_name ?? "—"}
+                  </Link>
                   {customer.is_admin && (
                     <Badge variant="secondary" className="ml-2">
                       Admin
@@ -73,6 +79,7 @@ export default async function AdminCustomersPage() {
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{customer.email ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{customer.phone ?? "—"}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(customer.created_at)}</TableCell>
                 <TableCell>{customer.orderCount}</TableCell>
                 <TableCell className="text-right font-medium">{formatPrice(customer.totalSpent)}</TableCell>
@@ -80,7 +87,7 @@ export default async function AdminCustomersPage() {
             ))}
             {customers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No customers yet.
                 </TableCell>
               </TableRow>

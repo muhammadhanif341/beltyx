@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { ShieldCheck, Star } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ interface ReviewRow {
   rating: number;
   body: string | null;
   is_approved: boolean;
+  order_id: string | null;
   created_at: string;
   product: { name: string } | null;
   profile: { full_name: string | null } | null;
@@ -29,7 +30,7 @@ export default async function AdminReviewsPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("reviews")
-    .select("id, rating, body, is_approved, created_at, product:products(name), profile:profiles(full_name)")
+    .select("id, rating, body, is_approved, order_id, created_at, product:products(name), profile:profiles(full_name)")
     .order("created_at", { ascending: false });
 
   const reviews = (data ?? []) as unknown as ReviewRow[];
@@ -49,6 +50,7 @@ export default async function AdminReviewsPage() {
               <TableHead>Customer</TableHead>
               <TableHead>Rating</TableHead>
               <TableHead>Review</TableHead>
+              <TableHead>Verified</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -67,6 +69,16 @@ export default async function AdminReviewsPage() {
                 </TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">{review.body}</TableCell>
                 <TableCell>
+                  {review.order_id ? (
+                    <Badge variant="outline" className="gap-1 text-accent">
+                      <ShieldCheck className="size-3" />
+                      Verified
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Badge variant={review.is_approved ? "default" : "secondary"}>
                     {review.is_approved ? "Published" : "Pending"}
                   </Badge>
@@ -78,7 +90,7 @@ export default async function AdminReviewsPage() {
             ))}
             {reviews.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No reviews yet.
                 </TableCell>
               </TableRow>
