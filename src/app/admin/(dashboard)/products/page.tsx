@@ -75,7 +75,7 @@ export default async function AdminProductsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <ProductRowActions productId={product.id} />
+                  <ProductRowActions productId={product.id} status={product.status} />
                 </TableCell>
               </TableRow>
             ))}

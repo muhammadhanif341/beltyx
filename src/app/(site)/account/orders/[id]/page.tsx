@@ -4,18 +4,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SignInPrompt } from "@/components/site/sign-in-prompt";
+import { OrderTimeline } from "@/components/site/order-timeline";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatOrderNumber, formatPrice } from "@/lib/format";
-import type { Order, OrderItem, OrderStatus } from "@/lib/types";
-
-const STATUS_VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  pending: "secondary",
-  processing: "outline",
-  shipped: "outline",
-  delivered: "default",
-  cancelled: "destructive",
-};
+import { ORDER_STATUS_LABELS, ORDER_STATUS_VARIANT, type Order, type OrderItem, type OrderStatusHistoryEntry } from "@/lib/types";
 
 export default async function OrderDetailPage({
   params,
@@ -37,6 +30,11 @@ export default async function OrderDetailPage({
   if (!order) notFound();
 
   const { data: items } = await supabase.from("order_items").select("*").eq("order_id", id);
+  const { data: history } = await supabase
+    .from("order_status_history")
+    .select("*")
+    .eq("order_id", id)
+    .order("created_at", { ascending: true });
   const orderTyped = order as Order;
 
   return (
@@ -51,9 +49,13 @@ export default async function OrderDetailPage({
           <h2 className="font-display text-2xl font-semibold">{formatOrderNumber(orderTyped.id)}</h2>
           <p className="text-sm text-muted-foreground">Placed on {formatDate(orderTyped.created_at)}</p>
         </div>
-        <Badge variant={STATUS_VARIANT[orderTyped.status]} className="text-sm capitalize">
-          {orderTyped.status}
+        <Badge variant={ORDER_STATUS_VARIANT[orderTyped.status]} className="text-sm">
+          {ORDER_STATUS_LABELS[orderTyped.status]}
         </Badge>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-card p-6 ring-1 ring-border">
+        <OrderTimeline status={orderTyped.status} history={(history ?? []) as OrderStatusHistoryEntry[]} />
       </div>
 
       <div className="mt-6 rounded-3xl bg-card p-6 ring-1 ring-border">
@@ -117,6 +119,11 @@ export default async function OrderDetailPage({
           <p className="mt-2 text-sm text-muted-foreground capitalize">
             {orderTyped.payment_method.replace("_", " ")} &middot; {orderTyped.payment_status}
           </p>
+          {orderTyped.estimated_delivery && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Estimated delivery: {formatDate(orderTyped.estimated_delivery)}
+            </p>
+          )}
         </div>
       </div>
     </div>

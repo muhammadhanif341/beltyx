@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import { DollarSign, Package, ShoppingCart, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/admin/stat-card";
 import { RevenueChart } from "@/components/admin/revenue-chart";
+import { DateRangeFilter, resolveDateRange } from "@/components/admin/date-range-filter";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
-import type { Order, OrderItem } from "@/lib/types";
+import type { Order, OrderItem, Profile } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Analytics" };
 
-function lastNDays(n: number): { key: string; label: string }[] {
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (n - 1 - i));
+function daysBetween(fromIso: string, toIso: string): { key: string; label: string }[] {
+  const from = new Date(fromIso);
+  const to = new Date(toIso);
+  const days = Math.max(1, Math.min(90, Math.round((to.getTime() - from.getTime()) / 86400000) + 1));
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(from);
+    d.setDate(d.getDate() + i);
     return {
       key: d.toISOString().slice(0, 10),
       label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -19,26 +23,40 @@ function lastNDays(n: number): { key: string; label: string }[] {
   });
 }
 
-export default async function AdminAnalyticsPage() {
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const range = resolveDateRange(params.range, params.from, params.to);
   const supabase = await createClient();
-  const [{ data: orders }, { data: orderItems }] = await Promise.all([
-    supabase.from("orders").select("*"),
+  const [{ data: orders }, { data: orderItems }, { data: customers }] = await Promise.all([
+    supabase.from("orders").select("*").gte("created_at", range.from).lte("created_at", range.to),
     supabase.from("order_items").select("*"),
+    supabase.from("profiles").select("*").gte("created_at", range.from).lte("created_at", range.to),
   ]);
 
   const allOrders = (orders ?? []) as Order[];
   const allItems = (orderItems ?? []) as OrderItem[];
+  const allCustomers = (customers ?? []) as Profile[];
 
   const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
   const avgOrderValue = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
 
-  const days = lastNDays(14);
-  const revenueByDay = days.map(({ key, label }) => {
-    const value = allOrders
-      .filter((o) => o.created_at.slice(0, 10) === key)
-      .reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-    return { label, value };
-  });
+  const days = daysBetween(range.from, range.to);
+  const revenueByDay = days.map(({ key, label }) => ({
+    label,
+    value: allOrders.filter((o) => o.created_at.slice(0, 10) === key).reduce((sum, o) => sum + Number(o.total ?? 0), 0),
+  }));
+  const ordersByDay = days.map(({ key, label }) => ({
+    label,
+    value: allOrders.filter((o) => o.created_at.slice(0, 10) === key).length,
+  }));
+  const customersByDay = days.map(({ key, label }) => ({
+    label,
+    value: allCustomers.filter((c) => c.created_at.slice(0, 10) === key).length,
+  }));
 
   const productTotals = new Map<string, { name: string; qty: number; revenue: number }>();
   for (const item of allItems) {
@@ -48,32 +66,50 @@ export default async function AdminAnalyticsPage() {
     productTotals.set(item.product_name, existing);
   }
   const topProducts = Array.from(productTotals.values())
-    .sort((a, b) => b.revenue - a.revenue)
+    .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-3xl font-semibold">Analytics</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Store performance overview</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-semibold">Analytics</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Store performance overview</p>
+        </div>
+        <DateRangeFilter />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={DollarSign} label="Total Revenue" value={formatPrice(totalRevenue)} />
-        <StatCard icon={ShoppingCart} label="Total Orders" value={String(allOrders.length)} />
+        <StatCard icon={DollarSign} label="Revenue" value={formatPrice(totalRevenue)} />
+        <StatCard icon={ShoppingCart} label="Orders" value={String(allOrders.length)} />
         <StatCard icon={TrendingUp} label="Avg. Order Value" value={formatPrice(avgOrderValue)} />
         <StatCard icon={Package} label="Items Sold" value={String(allItems.reduce((s, i) => s + i.quantity, 0))} />
       </div>
 
       <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
-        <h2 className="font-display text-lg font-semibold">Revenue — Last 14 Days</h2>
+        <h2 className="font-display text-lg font-semibold">Revenue</h2>
         <div className="mt-6">
           <RevenueChart data={revenueByDay} />
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <h2 className="font-display text-lg font-semibold">Orders</h2>
+          <div className="mt-6">
+            <RevenueChart data={ordersByDay} valueLabel="Orders" formatValue={(n) => String(n)} />
+          </div>
+        </div>
+        <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <h2 className="font-display text-lg font-semibold">New Customers</h2>
+          <div className="mt-6">
+            <RevenueChart data={customersByDay} valueLabel="Customers" formatValue={(n) => String(n)} />
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-2xl bg-card p-5 ring-1 ring-border">
-        <h2 className="font-display text-lg font-semibold">Top Products by Revenue</h2>
+        <h2 className="font-display text-lg font-semibold">Best-Selling Products</h2>
         <div className="mt-4 flex flex-col gap-3">
           {topProducts.length === 0 && <p className="text-sm text-muted-foreground">No sales data yet.</p>}
           {topProducts.map((product, i) => (

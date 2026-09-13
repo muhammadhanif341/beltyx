@@ -10,6 +10,7 @@ import { cn } from "cn";
 import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/store/cart-store";
 import { useWishlistStore } from "@/lib/store/wishlist-store";
+import { StockStatus } from "@/components/site/stock-status";
 import type { ProductWithRelations } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -38,6 +39,10 @@ export function ProductCard({
   }
 
   function handleQuickAdd() {
+    if (product.stock <= 0) {
+      toast.error("This item is out of stock.");
+      return;
+    }
     addToCart({
       productId: product.id,
       variantId: null,
@@ -137,6 +142,7 @@ export function ProductCard({
             </span>
           )}
         </div>
+        <StockStatus stock={product.stock} lowStockThreshold={product.low_stock_threshold} className="mt-1" />
       </Link>
     </div>
   );

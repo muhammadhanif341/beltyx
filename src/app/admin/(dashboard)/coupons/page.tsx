@@ -11,14 +11,20 @@ import {
 import { CouponFormDialog } from "@/components/admin/coupon-form-dialog";
 import { CouponDeleteButton } from "@/components/admin/coupon-delete-button";
 import { createClient } from "@/lib/supabase/server";
-import type { Coupon } from "@/lib/types";
+import type { Category, Coupon, Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Coupons" };
 
 export default async function AdminCouponsPage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("coupons").select("*").order("created_at", { ascending: false });
+  const [{ data }, { data: categoriesData }, { data: productsData }] = await Promise.all([
+    supabase.from("coupons").select("*").order("created_at", { ascending: false }),
+    supabase.from("categories").select("*").order("name"),
+    supabase.from("products").select("*").order("name"),
+  ]);
   const coupons = (data ?? []) as Coupon[];
+  const categories = (categoriesData ?? []) as Category[];
+  const products = (productsData ?? []) as unknown as Product[];
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +33,7 @@ export default async function AdminCouponsPage() {
           <h1 className="font-display text-3xl font-semibold">Coupons</h1>
           <p className="mt-1 text-sm text-muted-foreground">{coupons.length} coupons</p>
         </div>
-        <CouponFormDialog />
+        <CouponFormDialog categories={categories} products={products} />
       </div>
 
       <div className="rounded-2xl bg-card p-2 ring-1 ring-border sm:p-4">
@@ -57,7 +63,7 @@ export default async function AdminCouponsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="flex justify-end gap-1">
-                  <CouponFormDialog coupon={coupon} />
+                  <CouponFormDialog coupon={coupon} categories={categories} products={products} />
                   <CouponDeleteButton couponId={coupon.id} />
                 </TableCell>
               </TableRow>

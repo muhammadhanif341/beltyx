@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
+import { OrderTimeline } from "@/components/site/order-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatOrderNumber, formatPrice } from "@/lib/format";
-import type { Order, OrderItem } from "@/lib/types";
+import type { Order, OrderItem, OrderStatusHistoryEntry } from "@/lib/types";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -18,6 +20,11 @@ export default async function AdminOrderDetailPage({
   if (!order) notFound();
 
   const { data: items } = await supabase.from("order_items").select("*").eq("order_id", id);
+  const { data: history } = await supabase
+    .from("order_status_history")
+    .select("*")
+    .eq("order_id", id)
+    .order("created_at", { ascending: true });
   const orderTyped = order as Order;
 
   return (
@@ -32,7 +39,17 @@ export default async function AdminOrderDetailPage({
           <h1 className="font-display text-2xl font-semibold">{formatOrderNumber(orderTyped.id)}</h1>
           <p className="text-sm text-muted-foreground">Placed on {formatDate(orderTyped.created_at)}</p>
         </div>
-        <OrderStatusSelect orderId={orderTyped.id} status={orderTyped.status} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" render={<Link href={`/admin/orders/${orderTyped.id}/invoice`} target="_blank" />}>
+            <FileText className="size-3.5" data-icon="inline-start" />
+            Invoice
+          </Button>
+          <OrderStatusSelect orderId={orderTyped.id} status={orderTyped.status} />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-card p-6 ring-1 ring-border">
+        <OrderTimeline status={orderTyped.status} history={(history ?? []) as OrderStatusHistoryEntry[]} />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">

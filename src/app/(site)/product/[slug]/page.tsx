@@ -11,6 +11,7 @@ import {
 import { ProductGallery } from "@/components/site/product-gallery";
 import { ProductOptions } from "@/components/site/product-options";
 import { DeliveryInfoStrip } from "@/components/site/delivery-info-strip";
+import { StockStatus } from "@/components/site/stock-status";
 import { ProductGrid } from "@/components/site/product-grid";
 import { ReviewSection } from "@/components/site/review-section";
 import { SectionHeading } from "@/components/site/section-heading";
@@ -91,6 +92,8 @@ export default async function ProductDetailPage({
 
           <p className="mt-4 text-muted-foreground">{product.description}</p>
 
+          <StockStatus stock={product.stock} lowStockThreshold={product.low_stock_threshold} className="mt-3" />
+
           <div className="mt-6 flex flex-col gap-5">
             <ProductOptions product={product} />
             <DeliveryInfoStrip />
@@ -109,7 +112,14 @@ export default async function ProductDetailPage({
                 <ul className="list-inside list-disc space-y-1">
                   {product.sku && <li>SKU: {product.sku}</li>}
                   {product.category && <li>Category: {product.category.name}</li>}
-                  <li>Hand-finished edges, reinforced stitching</li>
+                  {Object.entries(product.specifications ?? {}).map(([key, value]) => (
+                    <li key={key}>
+                      {key}: {value}
+                    </li>
+                  ))}
+                  {Object.keys(product.specifications ?? {}).length === 0 && (
+                    <li>Hand-finished edges, reinforced stitching</li>
+                  )}
                 </ul>
               </AccordionContent>
             </AccordionItem>

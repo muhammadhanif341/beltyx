@@ -2,11 +2,20 @@
 // Regenerate with `supabase gen types typescript` once the project is linked,
 // and this file can be replaced by the generated output.
 
-export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-export type PaymentMethod = "cod" | "bank_transfer";
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "out_for_delivery"
+  | "delivered"
+  | "cancelled"
+  | "returned";
+export type PaymentMethod = string;
 export type PaymentStatus = "unpaid" | "paid" | "refunded";
 export type ProductStatus = "active" | "draft" | "archived";
 export type DiscountType = "percent" | "fixed";
+export type ShippingMethod = "standard" | "express";
 
 export interface Profile {
   id: string;
@@ -47,6 +56,8 @@ export interface Product {
   rating_count: number;
   sales_count: number;
   tags: string[];
+  low_stock_threshold: number;
+  specifications: Record<string, string>;
   created_at: string;
   updated_at: string;
 }
@@ -121,12 +132,53 @@ export interface Order {
   shipping_fee: number;
   total: number;
   coupon_code: string | null;
+  shipping_method: ShippingMethod;
+  estimated_delivery: string | null;
   shipping_address: ShippingAddress;
   contact_email: string;
   notes: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export interface OrderStatusHistoryEntry {
+  id: string;
+  order_id: string;
+  status: OrderStatus;
+  note: string | null;
+  created_at: string;
+}
+
+export const ORDER_STATUS_FLOW: OrderStatus[] = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+];
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  processing: "Processing",
+  shipped: "Shipped",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  returned: "Returned",
+};
+
+export const ORDER_STATUS_VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "secondary",
+  confirmed: "outline",
+  processing: "outline",
+  shipped: "outline",
+  out_for_delivery: "outline",
+  delivered: "default",
+  cancelled: "destructive",
+  returned: "destructive",
+};
 
 export interface ShippingAddress {
   full_name: string;
@@ -165,6 +217,7 @@ export interface Review {
   title: string | null;
   body: string | null;
   is_approved: boolean;
+  image_url: string | null;
   created_at: string;
   profile?: Pick<Profile, "full_name" | "avatar_url"> | null;
 }
@@ -181,6 +234,8 @@ export interface Coupon {
   is_active: boolean;
   starts_at: string | null;
   expires_at: string | null;
+  category_id: string | null;
+  product_id: string | null;
   created_at: string;
 }
 

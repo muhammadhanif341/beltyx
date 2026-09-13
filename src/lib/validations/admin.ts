@@ -14,6 +14,7 @@ export const productFormSchema = z.object({
   price: z.coerce.number().min(0, "Price must be 0 or more."),
   compareAtPrice: z.coerce.number().min(0).optional().nullable(),
   stock: z.coerce.number().int().min(0),
+  lowStockThreshold: z.coerce.number().int().min(0),
   status: z.enum(["active", "draft", "archived"]),
   isFeatured: z.boolean(),
   isNew: z.boolean(),
@@ -35,6 +36,11 @@ export const couponFormSchema = z.object({
   discountType: z.enum(["percent", "fixed"]),
   discountValue: z.coerce.number().min(0),
   minOrderAmount: z.coerce.number().min(0),
+  maxUses: z.coerce.number().int().min(0).optional().nullable(),
+  startsAt: z.string().optional(),
+  expiresAt: z.string().optional(),
+  categoryId: z.string().optional().nullable(),
+  productId: z.string().optional().nullable(),
   isActive: z.boolean(),
 });
 export type CouponFormInput = z.infer<typeof couponFormSchema>;

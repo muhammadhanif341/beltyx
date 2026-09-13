@@ -9,10 +9,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import type { OrderStatus } from "@/lib/types";
+import { ORDER_STATUS_LABELS, type OrderStatus } from "@/lib/types";
 import { toast } from "sonner";
 
-const STATUSES: OrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const STATUSES: OrderStatus[] = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+  "returned",
+];
 
 export function OrderStatusSelect({ orderId, status }: { orderId: string; status: OrderStatus }) {
   const router = useRouter();
@@ -31,13 +40,13 @@ export function OrderStatusSelect({ orderId, status }: { orderId: string; status
 
   return (
     <Select value={status} onValueChange={handleChange}>
-      <SelectTrigger className="w-40 capitalize">
+      <SelectTrigger className="w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         {STATUSES.map((s) => (
-          <SelectItem key={s} value={s} className="capitalize">
-            {s}
+          <SelectItem key={s} value={s}>
+            {ORDER_STATUS_LABELS[s]}
           </SelectItem>
         ))}
       </SelectContent>

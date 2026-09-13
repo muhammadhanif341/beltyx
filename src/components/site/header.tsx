@@ -31,8 +31,11 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
 
+  const [mounted, setMounted] = React.useState(false);
   const itemCount = useCartStore((s) => s.itemCount());
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
+
+  React.useEffect(() => setMounted(true), []);
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -141,7 +144,7 @@ export function Header() {
             render={<Link href="/wishlist" />}
           >
             <Heart className="size-[18px]" />
-            {wishlistCount > 0 && (
+            {mounted && wishlistCount > 0 && (
               <span className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
                 {wishlistCount}
               </span>
@@ -166,7 +169,7 @@ export function Header() {
             render={<Link href="/cart" />}
           >
             <ShoppingBag className="size-[18px]" />
-            {itemCount > 0 && (
+            {mounted && itemCount > 0 && (
               <span className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
                 {itemCount}
               </span>

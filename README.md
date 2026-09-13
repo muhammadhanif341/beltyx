@@ -37,6 +37,19 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Optional — WhatsApp click-to-chat button (digits only, with country code)
+NEXT_PUBLIC_WHATSAPP_NUMBER=
+
+# Optional — payment gateways beyond COD/Bank Transfer/mock card. A gateway
+# only appears at checkout once its variables below are set; see
+# src/lib/payments/ to wire up the real API calls when credentials arrive.
+STRIPE_SECRET_KEY=
+JAZZCASH_MERCHANT_ID=
+JAZZCASH_PASSWORD=
+JAZZCASH_INTEGRITY_SALT=
+EASYPAISA_STORE_ID=
+EASYPAISA_HASH_KEY=
 ```
 
 Without these, the app still builds and runs — data-dependent pages simply
@@ -49,6 +62,7 @@ In the Supabase Dashboard, open the **SQL Editor** and run, in order:
 1. `supabase/migrations/0001_init.sql` — tables, indexes, and RLS policies
 2. `supabase/migrations/0002_seed.sql` — sample categories/products for local development (optional but recommended)
 3. `supabase/migrations/0003_guest_checkout_verified_reviews.sql` — guest checkout policies, purchase-verified reviews, newsletter signups, and best-selling sort support
+4. `supabase/migrations/0004_checkout_orders_admin.sql` — full order status lifecycle + tracking timeline, atomic inventory decrement/overselling guard, coupon usage tracking + product/category restrictions, low-stock threshold, product specifications, and review photos
 
 (If you have the Supabase CLI linked to your project, `supabase db push` works too.)
 
@@ -66,6 +80,21 @@ with check (bucket_id = 'product-images' and public.is_admin());
 create policy "product-images: public read"
 on storage.objects for select
 using (bucket_id = 'product-images');
+```
+
+Then create a second **public** bucket named `review-images` (for optional
+customer review photos), with a policy allowing any signed-in shopper to
+upload:
+
+```sql
+create policy "review-images: authenticated upload"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'review-images');
+
+create policy "review-images: public read"
+on storage.objects for select
+using (bucket_id = 'review-images');
 ```
 
 ### 6. Create your first admin user
@@ -88,9 +117,15 @@ Visit [http://localhost:3000](http://localhost:3000).
 
 ## Notes
 
-- **Payments:** Checkout currently supports Cash on Delivery and Bank Transfer
-  only — no live payment gateway keys were provided. The checkout flow is
-  structured so a card processor (e.g. Stripe) can be added later.
+- **Payments:** Checkout supports Cash on Delivery, Bank Transfer, and a
+  mock/test card flow out of the box via a `PaymentProvider` abstraction
+  (`src/lib/payments/`). Stripe, JazzCash, and Easypaisa are registered but
+  stay hidden from checkout until their credentials are set as env vars —
+  see `.env.example`. No fake credentials are hard-coded anywhere.
+- **WhatsApp support widget:** set `NEXT_PUBLIC_WHATSAPP_NUMBER` to show the
+  floating WhatsApp button (`src/components/site/whatsapp-widget.tsx`). It
+  uses wa.me click-to-chat links today; swap in the WhatsApp Business API
+  behind a server route once credentials are available.
 - **Product imagery:** Seed data uses neutral placeholder swatches
   (`placehold.co`). Replace with real product photography from the admin
   Products page before launch.

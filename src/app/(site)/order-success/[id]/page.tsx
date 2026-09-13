@@ -77,21 +77,29 @@ export default async function OrderSuccessPage({
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl bg-muted/60 p-4 text-sm">
-          <p className="font-medium">
-            {order.payment_method === "cod" ? "Cash on Delivery" : "Bank Transfer"}
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            {order.shipping_address.full_name} &middot; {order.shipping_address.line1},{" "}
-            {order.shipping_address.city}, {order.shipping_address.country}
-          </p>
+        <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl bg-muted/60 p-4 text-sm sm:grid-cols-2">
+          <div>
+            <p className="font-medium capitalize">
+              {order.payment_method.replace("_", " ")} &middot; {order.payment_status}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              {order.shipping_address.full_name} &middot; {order.shipping_address.line1},{" "}
+              {order.shipping_address.city}, {order.shipping_address.country}
+            </p>
+          </div>
+          {order.estimated_delivery && (
+            <div className="sm:text-right">
+              <p className="font-medium">Estimated Delivery</p>
+              <p className="mt-1 text-muted-foreground">{formatDate(order.estimated_delivery)}</p>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         {order.user_id ? (
-          <Button variant="hero" size="lg" render={<Link href="/account/orders" />}>
-            Track My Order
+          <Button variant="hero" size="lg" render={<Link href={`/account/orders/${order.id}`} />}>
+            Track Order
           </Button>
         ) : null}
         <Button variant={order.user_id ? "outline" : "hero"} size="lg" render={<Link href="/shop" />}>

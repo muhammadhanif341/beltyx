@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductGrid } from "@/components/site/product-grid";
+import { WishlistGrid } from "@/components/site/wishlist-grid";
 import { createClient } from "@/lib/supabase/client";
 import { useWishlistStore } from "@/lib/store/wishlist-store";
 import type { ProductWithRelations } from "@/lib/types";
@@ -58,7 +58,7 @@ export default function WishlistPage() {
             </Button>
           </div>
         ) : (
-          <ProductGrid products={products} />
+          <WishlistGrid products={products} />
         )}
       </div>
     </div>

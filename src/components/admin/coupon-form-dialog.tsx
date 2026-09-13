@@ -26,10 +26,18 @@ import {
 } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { couponFormSchema, type CouponFormInput, type CouponFormRaw } from "@/lib/validations/admin";
-import type { Coupon } from "@/lib/types";
+import type { Category, Coupon, Product } from "@/lib/types";
 import { toast } from "sonner";
 
-export function CouponFormDialog({ coupon }: { coupon?: Coupon }) {
+export function CouponFormDialog({
+  coupon,
+  categories,
+  products,
+}: {
+  coupon?: Coupon;
+  categories: Category[];
+  products: Product[];
+}) {
   const [open, setOpen] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const router = useRouter();
@@ -50,6 +58,11 @@ export function CouponFormDialog({ coupon }: { coupon?: Coupon }) {
       discountType: coupon?.discount_type ?? "percent",
       discountValue: coupon?.discount_value ?? 10,
       minOrderAmount: coupon?.min_order_amount ?? 0,
+      maxUses: coupon?.max_uses ?? undefined,
+      startsAt: coupon?.starts_at ? coupon.starts_at.slice(0, 10) : "",
+      expiresAt: coupon?.expires_at ? coupon.expires_at.slice(0, 10) : "",
+      categoryId: coupon?.category_id ?? null,
+      productId: coupon?.product_id ?? null,
       isActive: coupon?.is_active ?? true,
     },
   });
@@ -63,6 +76,11 @@ export function CouponFormDialog({ coupon }: { coupon?: Coupon }) {
       discount_type: data.discountType,
       discount_value: data.discountValue,
       min_order_amount: data.minOrderAmount,
+      max_uses: data.maxUses || null,
+      starts_at: data.startsAt || null,
+      expires_at: data.expiresAt || null,
+      category_id: data.categoryId || null,
+      product_id: data.productId || null,
       is_active: data.isActive,
     };
 
@@ -87,7 +105,7 @@ export function CouponFormDialog({ coupon }: { coupon?: Coupon }) {
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Coupon" : "Add Coupon"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
           <div>
             <Label htmlFor="code">Code</Label>
             <Input id="code" className="mt-1.5 uppercase" {...register("code")} />
@@ -118,9 +136,63 @@ export function CouponFormDialog({ coupon }: { coupon?: Coupon }) {
               <Input id="discountValue" type="number" step="0.01" className="mt-1.5" {...register("discountValue")} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="minOrderAmount">Min. Order Amount ($)</Label>
+              <Input id="minOrderAmount" type="number" step="0.01" className="mt-1.5" {...register("minOrderAmount")} />
+            </div>
+            <div>
+              <Label htmlFor="maxUses">Usage Limit</Label>
+              <Input id="maxUses" type="number" placeholder="Unlimited" className="mt-1.5" {...register("maxUses")} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="startsAt">Starts</Label>
+              <Input id="startsAt" type="date" className="mt-1.5" {...register("startsAt")} />
+            </div>
+            <div>
+              <Label htmlFor="expiresAt">Expires</Label>
+              <Input id="expiresAt" type="date" className="mt-1.5" {...register("expiresAt")} />
+            </div>
+          </div>
           <div>
-            <Label htmlFor="minOrderAmount">Minimum Order Amount ($)</Label>
-            <Input id="minOrderAmount" type="number" step="0.01" className="mt-1.5" {...register("minOrderAmount")} />
+            <Label>Restrict to Category (optional)</Label>
+            <Select
+              value={watch("categoryId") ?? "none"}
+              onValueChange={(v) => setValue("categoryId", v === "none" ? null : v)}
+            >
+              <SelectTrigger className="mt-1.5 w-full">
+                <SelectValue placeholder="Any category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any category</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Restrict to Product (optional)</Label>
+            <Select
+              value={watch("productId") ?? "none"}
+              onValueChange={(v) => setValue("productId", v === "none" ? null : v)}
+            >
+              <SelectTrigger className="mt-1.5 w-full">
+                <SelectValue placeholder="Any product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any product</SelectItem>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={watch("isActive")} onCheckedChange={(v) => setValue("isActive", Boolean(v))} />

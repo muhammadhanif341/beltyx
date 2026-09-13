@@ -6,17 +6,9 @@ import { SignInPrompt } from "@/components/site/sign-in-prompt";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatOrderNumber, formatPrice } from "@/lib/format";
-import type { Order, OrderStatus } from "@/lib/types";
+import { ORDER_STATUS_LABELS, ORDER_STATUS_VARIANT, type Order } from "@/lib/types";
 
 export const metadata: Metadata = { title: "My Orders" };
-
-const STATUS_VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  pending: "secondary",
-  processing: "outline",
-  shipped: "outline",
-  delivered: "default",
-  cancelled: "destructive",
-};
 
 export default async function OrdersPage() {
   const user = await getCurrentUser();
@@ -60,8 +52,8 @@ export default async function OrdersPage() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">{formatPrice(order.total)}</span>
-            <Badge variant={STATUS_VARIANT[order.status]} className="capitalize">
-              {order.status}
+            <Badge variant={ORDER_STATUS_VARIANT[order.status]}>
+              {ORDER_STATUS_LABELS[order.status]}
             </Badge>
           </div>
         </Link>

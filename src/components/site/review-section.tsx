@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, Star } from "lucide-react";
+import { ImagePlus, ShieldCheck, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
@@ -17,7 +18,15 @@ export function ReviewSection({ productId, reviews }: { productId: string; revie
   const [eligibility, setEligibility] = React.useState<Eligibility>("loading");
   const [rating, setRating] = React.useState(5);
   const [body, setBody] = React.useState("");
+  const [image, setImage] = React.useState<{ file: File; previewUrl: string } | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImage({ file, previewUrl: URL.createObjectURL(file) });
+    e.target.value = "";
+  }
 
   React.useEffect(() => {
     let cancelled = false;
@@ -48,12 +57,25 @@ export function ReviewSection({ productId, reviews }: { productId: string; revie
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    let imageUrl: string | null = null;
+    if (image) {
+      const path = `${user!.id}/${crypto.randomUUID()}-${image.file.name}`;
+      const { error: uploadError } = await supabase.storage.from("review-images").upload(path, image.file);
+      if (uploadError) {
+        toast.error("Couldn't upload your photo, but you can still submit without it.");
+      } else {
+        imageUrl = supabase.storage.from("review-images").getPublicUrl(path).data.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("reviews").insert({
       product_id: productId,
       user_id: user!.id,
       order_id: eligibility.orderId,
       rating,
       body: body.trim(),
+      image_url: imageUrl,
     });
     setSubmitting(false);
     if (error) {
@@ -61,6 +83,7 @@ export function ReviewSection({ productId, reviews }: { productId: string; revie
       return;
     }
     setBody("");
+    setImage(null);
     toast.success("Thanks! Your review is pending approval.");
   }
 
@@ -86,6 +109,11 @@ export function ReviewSection({ productId, reviews }: { productId: string; revie
                 </div>
                 {review.title && <p className="mt-2 text-sm font-semibold">{review.title}</p>}
                 <p className="mt-1 text-sm text-muted-foreground">{review.body}</p>
+                {review.image_url && (
+                  <div className="relative mt-3 size-20 overflow-hidden rounded-lg bg-muted">
+                    <Image src={review.image_url} alt="Review photo" fill sizes="80px" className="object-cover" />
+                  </div>
+                )}
                 <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                   {review.profile?.full_name ?? "Beltyx Customer"} &middot; {formatDate(review.created_at)}
                   {review.order_id && (
@@ -142,6 +170,24 @@ export function ReviewSection({ productId, reviews }: { productId: string; revie
               required
               minLength={10}
             />
+            {image ? (
+              <div className="relative size-20 overflow-hidden rounded-lg bg-muted">
+                <Image src={image.previewUrl} alt="Selected photo" fill sizes="80px" className="object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImage(null)}
+                  className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex w-fit cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-accent">
+                <ImagePlus className="size-4" />
+                Add a photo (optional)
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+              </label>
+            )}
             <Button type="submit" variant="hero" disabled={submitting} className="self-start">
               {submitting ? "Submitting..." : "Submit Review"}
             </Button>

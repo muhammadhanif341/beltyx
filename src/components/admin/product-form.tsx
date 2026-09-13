@@ -33,7 +33,15 @@ interface VariantRow {
   size: string;
   color: string;
   colorHex: string;
+  sku: string;
+  priceOverride: string;
   stock: number;
+}
+
+interface SpecRow {
+  id: string;
+  key: string;
+  value: string;
 }
 
 export function ProductForm({
@@ -43,6 +51,7 @@ export function ProductForm({
   defaultValues,
   defaultImages = [],
   defaultVariants = [],
+  defaultSpecifications = {},
 }: {
   categories: Category[];
   mode: "create" | "edit";
@@ -50,6 +59,7 @@ export function ProductForm({
   defaultValues?: Partial<ProductFormRaw>;
   defaultImages?: ProductImage[];
   defaultVariants?: ProductVariant[];
+  defaultSpecifications?: Record<string, string>;
 }) {
   const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
@@ -63,8 +73,13 @@ export function ProductForm({
       size: v.size ?? "",
       color: v.color ?? "",
       colorHex: v.color_hex ?? "#241a12",
+      sku: v.sku ?? "",
+      priceOverride: v.price_override != null ? String(v.price_override) : "",
       stock: v.stock,
     })),
+  );
+  const [specs, setSpecs] = React.useState<SpecRow[]>(
+    Object.entries(defaultSpecifications).map(([key, value]) => ({ id: crypto.randomUUID(), key, value })),
   );
 
   const {
@@ -80,6 +95,7 @@ export function ProductForm({
       isFeatured: false,
       isNew: false,
       stock: 0,
+      lowStockThreshold: 5,
       price: 0,
       categoryId: null,
       ...defaultValues,
@@ -113,8 +129,12 @@ export function ProductForm({
   function addVariant() {
     setVariants((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), size: "", color: "", colorHex: "#241a12", stock: 0 },
+      { id: crypto.randomUUID(), size: "", color: "", colorHex: "#241a12", sku: "", priceOverride: "", stock: 0 },
     ]);
+  }
+
+  function addSpec() {
+    setSpecs((prev) => [...prev, { id: crypto.randomUUID(), key: "", value: "" }]);
   }
 
   async function onSubmit(data: ProductFormInput) {
@@ -131,9 +151,13 @@ export function ProductForm({
       price: data.price,
       compare_at_price: data.compareAtPrice || null,
       stock: data.stock,
+      low_stock_threshold: data.lowStockThreshold,
       status: data.status,
       is_featured: data.isFeatured,
       is_new: data.isNew,
+      specifications: Object.fromEntries(
+        specs.filter((s) => s.key.trim()).map((s) => [s.key.trim(), s.value.trim()]),
+      ),
     };
 
     let id = productId;
@@ -172,6 +196,8 @@ export function ProductForm({
           size: v.size || null,
           color: v.color || null,
           color_hex: v.color ? v.colorHex : null,
+          sku: v.sku || null,
+          price_override: v.priceOverride ? Number(v.priceOverride) : null,
           stock: v.stock,
         })),
       );
@@ -227,20 +253,56 @@ export function ProductForm({
 
         <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
           <h2 className="font-display text-lg font-semibold">Pricing & Stock</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
               <Label htmlFor="price">Price ($)</Label>
               <Input id="price" type="number" step="0.01" className="mt-1.5" {...register("price")} />
               {errors.price && <p className="mt-1 text-xs text-destructive">{errors.price.message}</p>}
             </div>
             <div>
-              <Label htmlFor="compareAtPrice">Compare-at Price ($)</Label>
+              <Label htmlFor="compareAtPrice">Sale / Compare-at Price ($)</Label>
               <Input id="compareAtPrice" type="number" step="0.01" className="mt-1.5" {...register("compareAtPrice")} />
             </div>
             <div>
               <Label htmlFor="stock">Base Stock</Label>
               <Input id="stock" type="number" className="mt-1.5" {...register("stock")} />
             </div>
+            <div>
+              <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+              <Input id="lowStockThreshold" type="number" className="mt-1.5" {...register("lowStockThreshold")} />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Specifications</h2>
+            <Button type="button" variant="outline" size="sm" onClick={addSpec}>
+              <Plus className="size-3.5" data-icon="inline-start" />
+              Add Spec
+            </Button>
+          </div>
+          <div className="mt-4 flex flex-col gap-2">
+            {specs.map((spec, i) => (
+              <div key={spec.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                <Input
+                  placeholder="Key (e.g. Dimensions)"
+                  value={spec.key}
+                  onChange={(e) => setSpecs((prev) => prev.map((s, idx) => (idx === i ? { ...s, key: e.target.value } : s)))}
+                />
+                <Input
+                  placeholder="Value (e.g. 4.5 x 3.5 in)"
+                  value={spec.value}
+                  onChange={(e) => setSpecs((prev) => prev.map((s, idx) => (idx === i ? { ...s, value: e.target.value } : s)))}
+                />
+                <Button type="button" variant="ghost" size="icon" onClick={() => setSpecs((prev) => prev.filter((_, idx) => idx !== i))}>
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {specs.length === 0 && (
+              <p className="text-sm text-muted-foreground">No specifications added yet.</p>
+            )}
           </div>
         </section>
 
@@ -254,7 +316,7 @@ export function ProductForm({
           </div>
           <div className="mt-4 flex flex-col gap-3">
             {variants.map((variant, i) => (
-              <div key={variant.id} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-3 sm:grid-cols-5">
+              <div key={variant.id} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-3 sm:grid-cols-7">
                 <Input
                   placeholder="Size (e.g. 32)"
                   value={variant.size}
@@ -275,6 +337,22 @@ export function ProductForm({
                   className="p-1"
                   onChange={(e) =>
                     setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, colorHex: e.target.value } : v)))
+                  }
+                />
+                <Input
+                  placeholder="SKU"
+                  value={variant.sku}
+                  onChange={(e) =>
+                    setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, sku: e.target.value } : v)))
+                  }
+                />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Price override"
+                  value={variant.priceOverride}
+                  onChange={(e) =>
+                    setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, priceOverride: e.target.value } : v)))
                   }
                 />
                 <Input

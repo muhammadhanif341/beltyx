@@ -14,8 +14,6 @@ import type { ProductWithRelations } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Inventory" };
 
-const LOW_STOCK_THRESHOLD = 5;
-
 export default async function AdminInventoryPage() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -56,7 +54,7 @@ export default async function AdminInventoryPage() {
                       <InventoryStockInput table="products" id={product.id} initialStock={product.stock} />
                     </TableCell>
                     <TableCell>
-                      <StockBadge stock={product.stock} />
+                      <StockBadge stock={product.stock} threshold={product.low_stock_threshold} />
                     </TableCell>
                   </TableRow>
                 );
@@ -72,7 +70,7 @@ export default async function AdminInventoryPage() {
                     <InventoryStockInput table="product_variants" id={variant.id} initialStock={variant.stock} />
                   </TableCell>
                   <TableCell>
-                    <StockBadge stock={variant.stock} />
+                    <StockBadge stock={variant.stock} threshold={product.low_stock_threshold} />
                   </TableCell>
                 </TableRow>
               ));
@@ -91,8 +89,8 @@ export default async function AdminInventoryPage() {
   );
 }
 
-function StockBadge({ stock }: { stock: number }) {
+function StockBadge({ stock, threshold }: { stock: number; threshold: number }) {
   if (stock <= 0) return <Badge variant="destructive">Out of stock</Badge>;
-  if (stock <= LOW_STOCK_THRESHOLD) return <Badge variant="secondary">Low stock</Badge>;
+  if (stock <= threshold) return <Badge variant="secondary">Low stock</Badge>;
   return <Badge variant="default">In stock</Badge>;
 }

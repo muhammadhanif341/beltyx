@@ -266,6 +266,7 @@ export async function getApprovedReviews(productId: string): Promise<Review[]> {
 export async function validateCoupon(
   code: string,
   subtotal: number,
+  productIds: string[] = [],
 ): Promise<{ ok: true; coupon: Coupon } | { ok: false; message: string }> {
   if (!isSupabaseConfigured) {
     return { ok: false, message: "Coupons are unavailable right now." };
@@ -297,6 +298,19 @@ export async function validateCoupon(
         ok: false,
         message: `Add $${coupon.min_order_amount.toFixed(2)} more to use this coupon.`,
       };
+    }
+    if (coupon.product_id && !productIds.includes(coupon.product_id)) {
+      return { ok: false, message: "This coupon only applies to a specific product." };
+    }
+    if (coupon.category_id) {
+      const { data: matches } = await supabase
+        .from("products")
+        .select("id")
+        .eq("category_id", coupon.category_id)
+        .in("id", productIds.length > 0 ? productIds : ["00000000-0000-0000-0000-000000000000"]);
+      if (!matches || matches.length === 0) {
+        return { ok: false, message: "This coupon only applies to a specific category." };
+      }
     }
     return { ok: true, coupon };
   } catch (error) {

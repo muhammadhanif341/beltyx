@@ -43,12 +43,14 @@ export default async function EditProductPage({
           price: product.price,
           compareAtPrice: product.compare_at_price,
           stock: product.stock,
+          lowStockThreshold: product.low_stock_threshold,
           status: product.status,
           isFeatured: product.is_featured,
           isNew: product.is_new,
         }}
         defaultImages={(product.images ?? []) as ProductImage[]}
         defaultVariants={(product.variants ?? []) as ProductVariant[]}
+        defaultSpecifications={(product.specifications ?? {}) as Record<string, string>}
       />
     </div>
   );

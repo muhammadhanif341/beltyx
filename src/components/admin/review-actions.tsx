@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Check, Trash2 } from "lucide-react";
+import { Check, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -10,15 +10,15 @@ export function ReviewActions({ reviewId, isApproved }: { reviewId: string; isAp
   const router = useRouter();
   const supabase = createClient();
 
-  async function handleApprove() {
-    const { error } = await supabase.from("reviews").update({ is_approved: true }).eq("id", reviewId);
+  async function setApproved(value: boolean) {
+    const { error } = await supabase.from("reviews").update({ is_approved: value }).eq("id", reviewId);
     if (error) return toast.error(error.message);
-    toast.success("Review approved");
+    toast.success(value ? "Review approved" : "Review hidden");
     router.refresh();
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this review?")) return;
+    if (!confirm("Delete this review? This cannot be undone.")) return;
     const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
     if (error) return toast.error(error.message);
     toast.success("Review deleted");
@@ -27,8 +27,12 @@ export function ReviewActions({ reviewId, isApproved }: { reviewId: string; isAp
 
   return (
     <div className="flex justify-end gap-1">
-      {!isApproved && (
-        <Button variant="ghost" size="icon-sm" onClick={handleApprove} aria-label="Approve">
+      {isApproved ? (
+        <Button variant="ghost" size="icon-sm" onClick={() => setApproved(false)} aria-label="Hide">
+          <EyeOff className="size-3.5 text-muted-foreground" />
+        </Button>
+      ) : (
+        <Button variant="ghost" size="icon-sm" onClick={() => setApproved(true)} aria-label="Approve">
           <Check className="size-3.5 text-accent" />
         </Button>
       )}
