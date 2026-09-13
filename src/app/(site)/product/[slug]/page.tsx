@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { ProductGallery } from "@/components/site/product-gallery";
 import { ProductOptions } from "@/components/site/product-options";
+import { DeliveryInfoStrip } from "@/components/site/delivery-info-strip";
 import { ProductGrid } from "@/components/site/product-grid";
 import { ReviewSection } from "@/components/site/review-section";
 import { SectionHeading } from "@/components/site/section-heading";
@@ -90,19 +91,32 @@ export default async function ProductDetailPage({
 
           <p className="mt-4 text-muted-foreground">{product.description}</p>
 
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col gap-5">
             <ProductOptions product={product} />
+            <DeliveryInfoStrip />
           </div>
 
           <Accordion className="mt-8">
-            <AccordionItem value="details">
-              <AccordionTrigger>Product Details</AccordionTrigger>
+            <AccordionItem value="description">
+              <AccordionTrigger>Description</AccordionTrigger>
+              <AccordionContent>
+                {product.description ?? "A Beltyx essential, crafted from full-grain leather."}
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="specifications">
+              <AccordionTrigger>Specifications</AccordionTrigger>
               <AccordionContent>
                 <ul className="list-inside list-disc space-y-1">
-                  {product.material && <li>Material: {product.material}</li>}
                   {product.sku && <li>SKU: {product.sku}</li>}
-                  <li>Hand-finished edges, full-grain leather</li>
+                  {product.category && <li>Category: {product.category.name}</li>}
+                  <li>Hand-finished edges, reinforced stitching</li>
                 </ul>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="materials">
+              <AccordionTrigger>Materials</AccordionTrigger>
+              <AccordionContent>
+                {product.material ?? "Full-grain leather"}
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="care">
@@ -112,7 +126,7 @@ export default async function ProductDetailPage({
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="shipping">
-              <AccordionTrigger>Shipping & Returns</AccordionTrigger>
+              <AccordionTrigger>Shipping Information</AccordionTrigger>
               <AccordionContent>
                 Free shipping on orders over $75. 30-day returns on unused items — see our{" "}
                 <Link href="/return-policy" className="text-accent underline">

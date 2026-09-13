@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "cn";
 import { formatPrice } from "@/lib/format";
 import { useCartStore } from "@/lib/store/cart-store";
-import { createOrder } from "@/lib/actions/checkout";
+import { createOrder, checkCoupon } from "@/lib/actions/checkout";
 import { shippingAddressSchema, type ShippingAddressInput } from "@/lib/validations/checkout";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ export function CheckoutForm({ defaultEmail }: { defaultEmail?: string }) {
   const { lines, couponCode, clear } = useCartStore();
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
+  const [discount, setDiscount] = React.useState(0);
 
   const {
     register,
@@ -44,8 +45,23 @@ export function CheckoutForm({ defaultEmail }: { defaultEmail?: string }) {
 
   const paymentMethod = watch("paymentMethod");
   const subtotal = lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-  const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-  const total = Math.max(0, subtotal + shippingFee);
+
+  React.useEffect(() => {
+    if (!couponCode) {
+      setDiscount(0);
+      return;
+    }
+    let cancelled = false;
+    checkCoupon(couponCode, subtotal).then((result) => {
+      if (!cancelled) setDiscount(result.ok ? result.discount : 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [couponCode, subtotal]);
+
+  const shippingFee = subtotal - discount >= FREE_SHIPPING_THRESHOLD || subtotal - discount <= 0 ? 0 : SHIPPING_FEE;
+  const total = Math.max(0, subtotal - discount + shippingFee);
 
   async function onSubmit(data: ShippingAddressInput) {
     if (lines.length === 0) {
@@ -194,6 +210,12 @@ export function CheckoutForm({ defaultEmail }: { defaultEmail?: string }) {
             <span className="text-muted-foreground">Subtotal</span>
             <span>{formatPrice(subtotal)}</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-accent">
+              <span>Discount{couponCode ? ` (${couponCode})` : ""}</span>
+              <span>-{formatPrice(discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Shipping</span>
             <span>{shippingFee === 0 ? "Free" : formatPrice(shippingFee)}</span>

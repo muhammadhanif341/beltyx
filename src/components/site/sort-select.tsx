@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/select";
 
 const OPTIONS = [
+  { value: "featured", label: "Featured" },
   { value: "newest", label: "Newest" },
   { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
-  { value: "rating", label: "Top Rated" },
+  { value: "rating", label: "Best Rated" },
+  { value: "best-selling", label: "Best Selling" },
 ];
 
 export function SortSelect() {

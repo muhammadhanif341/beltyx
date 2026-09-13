@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProductGrid } from "@/components/site/product-grid";
 import { ProductFiltersSidebar, ProductFiltersMobile } from "@/components/site/product-filters";
 import { SortSelect } from "@/components/site/sort-select";
-import { getCategories, getProducts, type ProductFilters } from "@/lib/queries";
+import { getCategories, getFilterOptions, getProducts, type ProductFilters } from "@/lib/queries";
 import {
   Pagination,
   PaginationContent,
@@ -25,16 +25,30 @@ export default async function ShopPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const sort = (typeof params.sort === "string" ? params.sort : undefined) as
-    | ProductFilters["sort"]
-    | undefined;
+  const str = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : undefined);
+  const sort = str("sort") as ProductFilters["sort"] | undefined;
   const page = Number(params.page) > 0 ? Number(params.page) : 1;
   const min = params.min ? Number(params.min) : undefined;
   const max = params.max ? Number(params.max) : undefined;
+  const size = str("size");
+  const color = str("color");
+  const inStockOnly = params.inStock === "1";
+  const minRating = params.rating ? Number(params.rating) : undefined;
 
-  const [categories, { products, total }] = await Promise.all([
+  const [categories, filterOptions, { products, total }] = await Promise.all([
     getCategories(),
-    getProducts({ sort, page, pageSize: PAGE_SIZE, minPrice: min, maxPrice: max }),
+    getFilterOptions(),
+    getProducts({
+      sort,
+      page,
+      pageSize: PAGE_SIZE,
+      minPrice: min,
+      maxPrice: max,
+      size,
+      color,
+      inStockOnly,
+      minRating,
+    }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -43,6 +57,10 @@ export default async function ShopPage({
     if (sort) sp.set("sort", sort);
     if (min != null) sp.set("min", String(min));
     if (max != null) sp.set("max", String(max));
+    if (size) sp.set("size", size);
+    if (color) sp.set("color", color);
+    if (inStockOnly) sp.set("inStock", "1");
+    if (minRating != null) sp.set("rating", String(minRating));
     sp.set("page", String(p));
     return `/shop?${sp.toString()}`;
   };
@@ -56,11 +74,11 @@ export default async function ShopPage({
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        <ProductFiltersSidebar categories={categories} />
+        <ProductFiltersSidebar categories={categories} sizes={filterOptions.sizes} colors={filterOptions.colors} />
 
         <div className="flex-1">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <ProductFiltersMobile categories={categories} />
+            <ProductFiltersMobile categories={categories} sizes={filterOptions.sizes} colors={filterOptions.colors} />
             <SortSelect />
           </div>
 

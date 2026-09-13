@@ -21,6 +21,7 @@ interface CartState {
   setQuantity: (productId: string, variantId: string | null, quantity: number) => void;
   applyCoupon: (code: string | null) => void;
   clear: () => void;
+  hydrate: (lines: CartLine[]) => void;
   subtotal: () => number;
   itemCount: () => number;
 }
@@ -65,6 +66,7 @@ export const useCartStore = create<CartState>()(
         })),
       applyCoupon: (code) => set({ couponCode: code }),
       clear: () => set({ lines: [], couponCode: null }),
+      hydrate: (lines) => set({ lines }),
       subtotal: () => get().lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
       itemCount: () => get().lines.reduce((sum, l) => sum + l.quantity, 0),
     }),

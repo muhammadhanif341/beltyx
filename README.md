@@ -48,6 +48,7 @@ In the Supabase Dashboard, open the **SQL Editor** and run, in order:
 
 1. `supabase/migrations/0001_init.sql` — tables, indexes, and RLS policies
 2. `supabase/migrations/0002_seed.sql` — sample categories/products for local development (optional but recommended)
+3. `supabase/migrations/0003_guest_checkout_verified_reviews.sql` — guest checkout policies, purchase-verified reviews, newsletter signups, and best-selling sort support
 
 (If you have the Supabase CLI linked to your project, `supabase db push` works too.)
 

@@ -1,9 +1,12 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { subscribeToNewsletter } from "@/lib/actions/newsletter";
+import { toast } from "sonner";
 
 const COLUMNS = [
   {
@@ -37,6 +40,23 @@ const COLUMNS = [
 ];
 
 export function Footer() {
+  const [email, setEmail] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleSubscribe(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitting(true);
+    const result = await subscribeToNewsletter(email.trim());
+    setSubmitting(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success(result.message);
+    setEmail("");
+  }
+
   return (
     <footer className="mt-24 border-t border-border bg-secondary/40">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
@@ -82,20 +102,24 @@ export function Footer() {
           ))}
 
           <div>
-            <h4 className="font-display text-base font-semibold">Stay in Touch</h4>
+            <h4 className="font-display text-base font-semibold uppercase">Join the Beltyx Club</h4>
             <p className="mt-4 text-sm text-muted-foreground">
               New arrivals and offers, no spam. Unsubscribe anytime.
             </p>
-            <form
-              className="mt-4 flex items-center gap-2"
-              onSubmit={(e) => e.preventDefault()}
-            >
+            <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={handleSubscribe}>
               <div className="relative flex-1">
                 <Mail className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input type="email" placeholder="Email address" className="h-10 rounded-full pl-8" required />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="h-10 rounded-full pl-8"
+                  required
+                />
               </div>
-              <Button type="submit" size="icon" variant="hero" className="size-10 shrink-0 rounded-full">
-                <Mail className="size-4" />
+              <Button type="submit" variant="hero" className="shrink-0 rounded-full" disabled={submitting}>
+                {submitting ? "Joining..." : "Join Now"}
               </Button>
             </form>
           </div>

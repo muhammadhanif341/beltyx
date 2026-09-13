@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, LayoutDashboard, LogOut, Package, Star } from "lucide-react";
+import { Heart, LayoutDashboard, LogOut, MapPin, Package, Star, User } from "lucide-react";
 import { cn } from "cn";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/account", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/account/profile", label: "Profile", icon: User },
+  { href: "/account/addresses", label: "Addresses", icon: MapPin },
   { href: "/account/orders", label: "Orders", icon: Package },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/account/reviews", label: "My Reviews", icon: Star },

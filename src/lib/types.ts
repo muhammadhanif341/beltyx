@@ -45,6 +45,8 @@ export interface Product {
   stock: number;
   rating_avg: number;
   rating_count: number;
+  sales_count: number;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }

@@ -44,10 +44,6 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { ok: false, message: "Please sign in to complete checkout." };
-  }
-
   const subtotal = input.lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
   let discount = 0;
 
@@ -66,7 +62,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
-      user_id: user.id,
+      user_id: user?.id ?? null,
       order_number: orderNumber,
       payment_method: input.paymentMethod,
       subtotal,

@@ -89,13 +89,32 @@ export default async function OrderSuccessPage({
       </div>
 
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Button variant="hero" size="lg" render={<Link href="/account/orders" />}>
-          Track My Order
-        </Button>
-        <Button variant="outline" size="lg" render={<Link href="/shop" />}>
+        {order.user_id ? (
+          <Button variant="hero" size="lg" render={<Link href="/account/orders" />}>
+            Track My Order
+          </Button>
+        ) : null}
+        <Button variant={order.user_id ? "outline" : "hero"} size="lg" render={<Link href="/shop" />}>
           Continue Shopping
         </Button>
       </div>
+
+      {!order.user_id && (
+        <div className="mt-10 rounded-3xl bg-card p-6 text-center ring-1 ring-border">
+          <p className="font-display text-lg font-semibold">Want to track this order easily next time?</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create an account to track future orders faster — using {order.contact_email}.
+          </p>
+          <Button
+            variant="outline"
+            size="lg"
+            className="mt-4"
+            render={<Link href={`/signup?email=${encodeURIComponent(order.contact_email)}`} />}
+          >
+            Create an Account
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

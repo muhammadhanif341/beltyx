@@ -80,7 +80,11 @@ export interface ProductFilters {
   categorySlug?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: "newest" | "price-asc" | "price-desc" | "rating";
+  size?: string;
+  color?: string;
+  inStockOnly?: boolean;
+  minRating?: number;
+  sort?: "featured" | "newest" | "price-asc" | "price-desc" | "rating" | "best-selling";
   page?: number;
   pageSize?: number;
 }
@@ -106,8 +110,29 @@ export async function getProducts(
     }
     if (filters.minPrice != null) query = query.gte("price", filters.minPrice);
     if (filters.maxPrice != null) query = query.lte("price", filters.maxPrice);
+    if (filters.inStockOnly) query = query.gt("stock", 0);
+    if (filters.minRating != null) query = query.gte("rating_avg", filters.minRating);
+    if (filters.size) {
+      const { data: matches } = await supabase
+        .from("product_variants")
+        .select("product_id")
+        .eq("size", filters.size);
+      const ids = (matches ?? []).map((m) => m.product_id);
+      query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    }
+    if (filters.color) {
+      const { data: matches } = await supabase
+        .from("product_variants")
+        .select("product_id")
+        .eq("color", filters.color);
+      const ids = (matches ?? []).map((m) => m.product_id);
+      query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    }
 
     switch (filters.sort) {
+      case "featured":
+        query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
+        break;
       case "price-asc":
         query = query.order("price", { ascending: true });
         break;
@@ -116,6 +141,9 @@ export async function getProducts(
         break;
       case "rating":
         query = query.order("rating_avg", { ascending: false });
+        break;
+      case "best-selling":
+        query = query.order("sales_count", { ascending: false });
         break;
       default:
         query = query.order("created_at", { ascending: false });
@@ -128,6 +156,17 @@ export async function getProducts(
       total: count ?? 0,
     };
   }, { products: [], total: 0 });
+}
+
+export async function getFilterOptions(): Promise<{ sizes: string[]; colors: string[] }> {
+  return safeQuery(async () => {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("product_variants").select("size, color");
+    if (error) throw error;
+    const sizes = Array.from(new Set((data ?? []).map((v) => v.size).filter(Boolean))) as string[];
+    const colors = Array.from(new Set((data ?? []).map((v) => v.color).filter(Boolean))) as string[];
+    return { sizes: sizes.sort(), colors: colors.sort() };
+  }, { sizes: [], colors: [] });
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
@@ -165,14 +204,46 @@ export async function getRelatedProducts(
 
 export async function searchProducts(term: string): Promise<ProductWithRelations[]> {
   return safeQuery(async () => {
-    if (!term.trim()) return [];
+    const trimmed = term.trim();
+    if (!trimmed) return [];
+    const supabase = await createClient();
+
+    const matchingCategoryIds = (
+      await supabase.from("categories").select("id").ilike("name", `%${trimmed}%`)
+    ).data?.map((c) => c.id) ?? [];
+
+    const orClauses = [
+      `name.ilike.%${trimmed}%`,
+      `description.ilike.%${trimmed}%`,
+      `material.ilike.%${trimmed}%`,
+      `tags.cs.{${trimmed}}`,
+    ];
+    if (matchingCategoryIds.length > 0) {
+      orClauses.push(`category_id.in.(${matchingCategoryIds.join(",")})`);
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .select(PRODUCT_SELECT)
+      .eq("status", "active")
+      .or(orClauses.join(","))
+      .limit(24);
+    if (error) throw error;
+    return (data ?? []) as unknown as ProductWithRelations[];
+  }, []);
+}
+
+export async function searchProductSuggestions(term: string, limit = 6): Promise<ProductWithRelations[]> {
+  return safeQuery(async () => {
+    const trimmed = term.trim();
+    if (trimmed.length < 2) return [];
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("products")
       .select(PRODUCT_SELECT)
       .eq("status", "active")
-      .or(`name.ilike.%${term}%,description.ilike.%${term}%,material.ilike.%${term}%`)
-      .limit(24);
+      .ilike("name", `%${trimmed}%`)
+      .limit(limit);
     if (error) throw error;
     return (data ?? []) as unknown as ProductWithRelations[];
   }, []);

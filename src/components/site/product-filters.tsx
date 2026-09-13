@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "cn";
 import type { Category } from "@/lib/types";
 
@@ -15,12 +16,33 @@ const PRICE_PRESETS = [
   { label: "Over $100", min: 100, max: undefined },
 ];
 
-function FilterBody({ categories, activeCategory }: { categories: Category[]; activeCategory?: string }) {
+const RATING_PRESETS = [4, 3, 2];
+
+interface FilterBodyProps {
+  categories: Category[];
+  activeCategory?: string;
+  sizes: string[];
+  colors: string[];
+}
+
+function FilterBody({ categories, activeCategory, sizes, colors }: FilterBodyProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const minPrice = searchParams.get("min");
   const maxPrice = searchParams.get("max");
+  const activeSize = searchParams.get("size");
+  const activeColor = searchParams.get("color");
+  const inStockOnly = searchParams.get("inStock") === "1";
+  const activeRating = searchParams.get("rating");
+
+  function updateParam(key: string, value: string | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value == null) params.delete(key);
+    else params.set(key, value);
+    params.delete("page");
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
   function applyPriceRange(min?: number, max?: number) {
     const params = new URLSearchParams(searchParams.toString());
@@ -36,8 +58,21 @@ function FilterBody({ categories, activeCategory }: { categories: Category[]; ac
     (min == null ? !minPrice : minPrice === String(min)) &&
     (max == null ? !maxPrice : maxPrice === String(max));
 
+  const hasAnyFilter = minPrice || maxPrice || activeSize || activeColor || inStockOnly || activeRating;
+
   return (
     <div className="space-y-8">
+      {hasAnyFilter && (
+        <button
+          type="button"
+          onClick={() => router.push(pathname)}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-accent"
+        >
+          <X className="size-3" />
+          Clear all filters
+        </button>
+      )}
+
       <div>
         <h3 className="text-sm font-semibold">Category</h3>
         <div className="mt-3 flex flex-col gap-1">
@@ -93,31 +128,94 @@ function FilterBody({ categories, activeCategory }: { categories: Category[]; ac
           )}
         </div>
       </div>
+
+      {sizes.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold">Size</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => updateParam("size", activeSize === s ? null : s)}
+                className={cn(
+                  "flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm transition-colors",
+                  activeSize === s ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent",
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {colors.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold">Color</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {colors.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => updateParam("color", activeColor === c ? null : c)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                  activeColor === c ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent",
+                )}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h3 className="text-sm font-semibold">Availability</h3>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={inStockOnly}
+            onCheckedChange={(v) => updateParam("inStock", v ? "1" : null)}
+          />
+          In stock only
+        </label>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold">Rating</h3>
+        <div className="mt-3 flex flex-col gap-1">
+          {RATING_PRESETS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => updateParam("rating", activeRating === String(r) ? null : String(r))}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                activeRating === String(r) && "bg-muted font-medium text-accent",
+              )}
+            >
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className={cn("size-3.5", i < r ? "fill-accent text-accent" : "text-muted-foreground")} />
+              ))}
+              <span className="ml-1">& up</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-export function ProductFiltersSidebar({
-  categories,
-  activeCategory,
-}: {
-  categories: Category[];
-  activeCategory?: string;
-}) {
+export function ProductFiltersSidebar(props: FilterBodyProps) {
   return (
     <aside className="hidden w-56 shrink-0 lg:block">
-      <FilterBody categories={categories} activeCategory={activeCategory} />
+      <FilterBody {...props} />
     </aside>
   );
 }
 
-export function ProductFiltersMobile({
-  categories,
-  activeCategory,
-}: {
-  categories: Category[];
-  activeCategory?: string;
-}) {
+export function ProductFiltersMobile(props: FilterBodyProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -127,7 +225,7 @@ export function ProductFiltersMobile({
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
         <div className="overflow-y-auto p-4">
-          <FilterBody categories={categories} activeCategory={activeCategory} />
+          <FilterBody {...props} />
         </div>
       </SheetContent>
       <Button variant="outline" className="lg:hidden" onClick={() => setOpen(true)}>

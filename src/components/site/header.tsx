@@ -2,10 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Heart, Menu, Search, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchBar } from "@/components/site/search-bar";
 import {
   Sheet,
   SheetClose,
@@ -31,8 +30,6 @@ export function Header() {
   const [scrolled, setScrolled] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-  const router = useRouter();
 
   const itemCount = useCartStore((s) => s.itemCount());
   const wishlistCount = useWishlistStore((s) => s.productIds.length);
@@ -43,13 +40,6 @@ export function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-    setSearchOpen(false);
-  }
 
   return (
     <header
@@ -189,16 +179,7 @@ export function Header() {
 
       {searchOpen && (
         <div className="border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
-          <form onSubmit={handleSearchSubmit} className="relative mx-auto max-w-7xl">
-            <Input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for wallets, belts, card holders..."
-              className="h-11 w-full rounded-full pl-10"
-            />
-            <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          </form>
+          <SearchBar autoFocus onNavigate={() => setSearchOpen(false)} />
         </div>
       )}
     </header>
