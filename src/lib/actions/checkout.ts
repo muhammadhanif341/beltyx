@@ -117,6 +117,21 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     return { ok: false, message: "Couldn't place your order. Please try again." };
   }
 
+  // Attempt payment before touching inventory: a failed/declined payment then
+  // never decrements stock, so there's nothing to roll back on failure.
+  const payment = await provider.createPayment({
+    orderId: order.id,
+    orderNumber: order.order_number,
+    amount: total,
+    currency: "USD",
+    customerEmail: input.contactEmail,
+  });
+
+  if (!payment.ok) {
+    await supabase.from("orders").delete().eq("id", order.id);
+    return { ok: false, message: payment.message || "Payment failed. Please try again or choose a different payment method." };
+  }
+
   const { error: itemsError } = await supabase.from("order_items").insert(
     input.lines.map((line) => ({
       order_id: order.id,
@@ -136,14 +151,6 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     await supabase.from("orders").delete().eq("id", order.id);
     return { ok: false, message: itemsError.message.includes("Insufficient") ? itemsError.message : "One or more items just sold out. Please review your bag." };
   }
-
-  const payment = await provider.createPayment({
-    orderId: order.id,
-    orderNumber: order.order_number,
-    amount: total,
-    currency: "USD",
-    customerEmail: input.contactEmail,
-  });
 
   if (payment.status !== "unpaid") {
     await supabase.from("orders").update({ payment_status: payment.status }).eq("id", order.id);

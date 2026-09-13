@@ -176,6 +176,7 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
       .from("products")
       .select(PRODUCT_SELECT)
       .eq("slug", slug)
+      .eq("status", "active")
       .maybeSingle();
     if (error) throw error;
     return (data as unknown as ProductWithRelations) ?? null;
